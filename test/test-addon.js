@@ -60,26 +60,30 @@ test('build simple addon', function (t) {
   proc.stderr.setEncoding('utf-8')
 })
 
-test('make sure addon symbols do not overlap', function (t) {
+test('make sure addon symbols do not overlap', { timeout: 60000 }, function (t) {
   t.plan(3)
 
   var addonPath = path.resolve(__dirname, 'node_modules', 'duplicate_symbols')
   // Set the loglevel otherwise the output disappears when run via 'npm test'
   var cmd = [nodeGyp, 'rebuild', '-C', addonPath, '--loglevel=verbose']
-  execFile(process.execPath, cmd, function (err, stdout, stderr) {
+  console.error(process.execPath, cmd)
+  var proc = execFile(process.execPath, cmd, function (err, stdout, stderr) {
+    console.error('stderr:', stderr)
+    console.error('stdout:', stdout)
     var logLines = stderr.trim().split(/\r?\n/)
     var lastLine = logLines[logLines.length-1]
     t.strictEqual(err, null)
     t.strictEqual(lastLine, 'gyp info ok', 'should end in ok')
     t.strictEqual(runDuplicateBindings().trim(), 'not equal')
   })
+  proc.stdout.setEncoding('utf-8')
+  proc.stderr.setEncoding('utf-8')
 })
 
 test('build simple addon in path with non-ascii characters', function (t) {
-  t.plan(1)
-
   if (!checkCharmapValid()) {
-    return t.skip('python console app can\'t encode non-ascii character.')
+    t.comment('python console app can\'t encode non-ascii character.')
+    return t.end()
   }
 
   var testDirNames = {
@@ -91,7 +95,8 @@ test('build simple addon in path with non-ascii characters', function (t) {
   var testDirName = testDirNames[getEncoding()]
   // If encoding is UTF-8 or other then no need to test
   if (!testDirName) {
-    return t.skip('no need to test')
+    t.comment('no need to test')
+    return t.end()
   }
 
   t.plan(3)
@@ -143,7 +148,7 @@ test('build simple addon in path with non-ascii characters', function (t) {
 test('addon works with renamed host executable', function (t) {
   // No `fs.copyFileSync` before node8.
   if (process.version.substr(1).split('.')[0] < 8) {
-    t.skip("skipping test for old node version");
+    t.comment("skipping test for old node version");
     t.end();
     return;
   }
